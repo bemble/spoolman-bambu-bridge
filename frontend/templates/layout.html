@@ -1,0 +1,66 @@
+{{define "layout"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spoolman Bambu Bridge</title>
+    <link rel="stylesheet" href="/static/css/bulma.min.css">
+    <style>
+        .color-swatch {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: inline-block;
+            border: 1px solid #ddd;
+            vertical-align: middle;
+        }
+        .tray-card {
+            min-height: 100px;
+        }
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+        .status-dot.online { background-color: #48c78e; }
+        .status-dot.offline { background-color: #f14668; }
+        .remain-bar {
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar is-dark" role="navigation" aria-label="main navigation">
+        <div class="navbar-brand">
+            <a class="navbar-item" href="/">
+                <img src="/static/icon.svg" alt="" style="height: 28px; margin-right: 8px;">
+                <strong>Spoolman Bambu Bridge</strong>
+            </a>
+        </div>
+        <div class="navbar-end">
+            <div class="navbar-item">
+                <span id="backend-status">
+                    <span class="status-dot offline"></span>
+                    <span class="has-text-light">Backend: disconnected</span>
+                </span>
+            </div>
+            <div class="navbar-item">
+                <span id="spoolman-status">
+                    <span class="status-dot offline"></span>
+                    <span class="has-text-light">Spoolman: unknown</span>
+                </span>
+            </div>
+        </div>
+    </nav>
+    <section class="section">
+        <div class="container">
+            {{template "content" .}}
+        </div>
+    </section>
+    {{template "scripts" .}}
+</body>
+</html>
+{{end}}

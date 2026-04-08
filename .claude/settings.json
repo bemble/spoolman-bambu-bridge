@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(go mod:*)",
+      "Bash(go get:*)",
+      "Bash(go test:*)",
+      "Bash(go build:*)",
+      "Bash(go vet:*)",
+      "WebFetch(domain:donkie.github.io)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(go run:*)"
+    ]
+  }
+}

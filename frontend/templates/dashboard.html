@@ -1,0 +1,156 @@
+{{template "layout" .}}
+
+{{define "content"}}
+<div id="printers"></div>
+{{end}}
+
+{{define "scripts"}}
+<script>
+(function() {
+    const printersEl = document.getElementById('printers');
+    const spoolmanStatusEl = document.getElementById('spoolman-status');
+    const backendStatusEl = document.getElementById('backend-status');
+    let lastState = null;
+    let backendConnected = false;
+
+    function trayColor(hex) {
+        if (!hex || hex.length < 6) return '#cccccc';
+        return '#' + hex.substring(0, 6);
+    }
+
+    function remainClass(pct) {
+        if (pct > 50) return 'is-success';
+        if (pct > 20) return 'is-warning';
+        return 'is-danger';
+    }
+
+    function setBackendStatus(connected) {
+        backendConnected = connected;
+        backendStatusEl.innerHTML = `
+            <span class="status-dot ${connected ? 'online' : 'offline'}"></span>
+            <span class="has-text-light">Backend: ${connected ? 'connected' : 'disconnected'}</span>
+        `;
+        renderUI();
+    }
+
+    function setSpoolmanStatus(online) {
+        spoolmanStatusEl.innerHTML = `
+            <span class="status-dot ${online ? 'online' : 'offline'}"></span>
+            <span class="has-text-light">Spoolman: ${online ? 'connected' : 'disconnected'}</span>
+        `;
+    }
+
+    function renderUI() {
+        if (!backendConnected) {
+            printersEl.innerHTML = '<div class="notification is-danger is-light">Backend disconnected — reconnecting...</div>';
+            setSpoolmanStatus(false);
+            return;
+        }
+
+        if (!lastState) {
+            printersEl.innerHTML = '<div class="notification is-info is-light">Waiting for data...</div>';
+            return;
+        }
+
+        setSpoolmanStatus(lastState.spoolman_online);
+
+        if (!lastState.printers || lastState.printers.length === 0) {
+            printersEl.innerHTML = '<div class="notification is-warning is-light">No printers configured.</div>';
+            return;
+        }
+
+        let html = '';
+        for (const printer of lastState.printers) {
+            const connDot = printer.connected ? 'online' : 'offline';
+            const gcodeState = printer.gcode_state || 'IDLE';
+
+            html += `
+            <div class="box mb-4">
+                <div class="level is-mobile mb-3">
+                    <div class="level-left">
+                        <div class="level-item">
+                            <h2 class="title is-5 mb-0">
+                                <span class="status-dot ${connDot}"></span>
+                                ${printer.name || printer.serial}
+                            </h2>
+                        </div>
+                    </div>
+                    <div class="level-right">
+                        <div class="level-item">
+                            <span class="tag is-light">${gcodeState}</span>
+                        </div>
+                    </div>
+                </div>`;
+
+            if (!printer.trays || printer.trays.length === 0) {
+                const msg = printer.connected
+                    ? 'Waiting for AMS data...'
+                    : 'Printer not connected — waiting for MQTT connection...';
+                html += '<p class="has-text-grey">' + msg + '</p>';
+            } else {
+                html += '<div class="columns is-multiline is-mobile">';
+                for (const tray of printer.trays) {
+                    const color = trayColor(tray.tray_color);
+                    const label = tray.tray_sub_brands || tray.tray_type || 'Unknown';
+                    const amsLabel = 'AMS' + tray.ams_id + ' / Slot ' + tray.tray_id;
+
+                    html += `
+                    <div class="column is-6-mobile is-4-tablet is-3-desktop">
+                        <div class="card tray-card">
+                            <div class="card-content p-3">
+                                <p class="is-size-7 has-text-grey mb-1">${amsLabel}</p>
+                                <div class="is-flex is-align-items-center mb-2">
+                                    <span class="color-swatch mr-2" style="background-color: ${color}"></span>
+                                    <span class="is-size-6 has-text-weight-semibold">${label}</span>
+                                </div>
+                                <p class="is-size-7 has-text-grey mb-1">${tray.tray_id_name}</p>
+                                <progress class="progress ${remainClass(tray.remain)} is-small remain-bar"
+                                    value="${tray.remain}" max="100">${tray.remain}%</progress>
+                                <p class="is-size-7 has-text-right">${tray.remain}%</p>
+                            </div>
+                        </div>
+                    </div>`;
+                }
+                html += '</div>';
+            }
+
+            html += '</div>';
+        }
+
+        printersEl.innerHTML = html;
+    }
+
+    // WebSocket connection with auto-reconnect
+    function connect() {
+        const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const ws = new WebSocket(proto + '//' + location.host + '/ws');
+
+        ws.onopen = function() {
+            setBackendStatus(true);
+            ws.send('get_state');
+        };
+
+        ws.onmessage = function(event) {
+            try {
+                lastState = JSON.parse(event.data);
+                renderUI();
+            } catch(e) {
+                console.error('Failed to parse WS message:', e);
+            }
+        };
+
+        ws.onclose = function() {
+            setBackendStatus(false);
+            setTimeout(connect, 3000);
+        };
+
+        ws.onerror = function() {
+            ws.close();
+        };
+    }
+
+    setBackendStatus(false);
+    connect();
+})();
+</script>
+{{end}}

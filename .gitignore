@@ -1,0 +1,11 @@
+# Claude Code
+.claude/settings.local.json
+
+# Config (contains printer credentials)
+config.yaml
+
+# Go build output
+bridge
+
+# OS files
+.DS_Store
