@@ -19,7 +19,7 @@ It connects to your printers over MQTT, tracks filament usage in real time, and 
 
 - Go 1.24+ (for building from source)
 - A running [Spoolman](https://github.com/Donkie/Spoolman) instance
-- One or more Bambu Lab printers with LAN mode enabled
+- One or more Bambu Lab printers, LAN mode not required
 
 ### Build & Run
 
